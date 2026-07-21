@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendar — BonsaiOS</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B0F0D">
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+<div class="app-shell" id="app-shell"></div>
+
+<template id="tpl-content">
+  <div class="card">
+    <div class="card-head">
+      <h3 id="month-label">—</h3>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-ghost" id="prev-month" type="button">← Prev</button>
+        <button class="btn btn-ghost" id="today-btn" type="button">Today</button>
+        <button class="btn btn-ghost" id="next-month" type="button">Next →</button>
+      </div>
+    </div>
+    <div class="cal-grid" id="cal-dow"></div>
+    <div class="cal-grid" id="cal-grid" style="margin-top:6px;"></div>
+    <hr class="divider">
+    <div style="display:flex; gap:14px; font-size:12px; color:var(--text-dim);">
+      <span><span class="cal-tag water">watering</span></span>
+      <span><span class="cal-tag fert">fertilizer</span></span>
+      <span><span class="cal-tag other">other</span></span>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2" style="margin-top:16px;">
+    <div class="card">
+      <h3>Upcoming reminders</h3>
+      <div id="upcoming-slot"><p>Loading…</p></div>
+    </div>
+    <div class="card">
+      <h3>Seasonal notes</h3>
+      <div id="season-notes"></div>
+    </div>
+  </div>
+</template>
+
+<script type="module">
+  import { initShell } from './js/core/shell.js';
+  import { getEntries } from './js/core/storage.js';
+  import { nextWateringDate, nextFertilizerDate, currentSeason } from './js/core/health.js';
+
+  const { cfg } = await initShell('calendar');
+  document.getElementById('page-content').appendChild(document.getElementById('tpl-content').content.cloneNode(true));
+
+  const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  document.getElementById('cal-dow').innerHTML = DOW.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+  let viewDate = new Date();
+  const entries = await getEntries({ refresh: true, onRefreshed: () => render() });
+
+  function eventsForMonth(year, month) {
+    // Build a map date -> [{kind,label}] from actual watered/fertilized logs plus projected next-due dates.
+    const map = {};
+    const add = (d, kind, label) => { (map[d] = map[d] || []).push({ kind, label }); };
+
+    for (const e of entries) {
+      if (e.watered) add(e.date, 'water', 'Watered');
+      if (e.fertilized) add(e.date, 'fert', 'Fertilized');
+      if (e.repotted) add(e.date, 'other', 'Repotted');
+      if (e.pruned) add(e.date, 'other', 'Pruned');
+    }
+    const nw = nextWateringDate(entries, cfg.reminders.wateringDays);
+    const nf = nextFertilizerDate(entries, cfg.reminders.fertilizerDays);
+    if (nw) add(nw, 'water', 'Water due');
+    if (nf) add(nf, 'fert', 'Fertilizer due');
+    return map;
+  }
+
+  function render() {
+    const y = viewDate.getFullYear(), m = viewDate.getMonth();
+    document.getElementById('month-label').textContent = viewDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    const first = new Date(y, m, 1);
+    const startOffset = first.getDay();
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const events = eventsForMonth(y, m);
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    let html = '';
+    for (let i = 0; i < startOffset; i++) html += `<div class="cal-cell" style="opacity:0.35;"></div>`;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const isToday = dateStr === todayStr;
+      const tags = (events[dateStr] || []).map(ev => `<span class="cal-tag ${ev.kind}">${ev.label}</span>`).join(' ');
+      html += `<div class="cal-cell ${isToday ? 'today' : ''}"><div class="cal-daynum">${d}</div>${tags}</div>`;
+    }
+    document.getElementById('cal-grid').innerHTML = html;
+
+    const upcoming = Object.keys(events).filter(d => d >= todayStr).sort().slice(0, 6);
+    document.getElementById('upcoming-slot').innerHTML = upcoming.length
+      ? upcoming.map(d => events[d].map(ev => `<div class="entry-row"><div class="entry-date">${d}</div><div class="entry-body"><span class="cal-tag ${ev.kind}">${ev.label}</span></div></div>`).join('')).join('')
+      : `<p>Nothing scheduled — log a journal entry to generate reminders.</p>`;
+
+    const season = currentSeason();
+    const notes = {
+      'Winter (indoor)': 'Indoors under grow lights. Watch humidity trays and keep away from cold drafts near windows/doors.',
+      'Spring': 'Growing season begins — resume regular fertilizing and watch for new bud break.',
+      'Summer': 'Peak growth and bloom season. Watch balcony heat and wind exposure; water more frequently.',
+      'Fall': 'Prepare for the move indoors — taper fertilizer, start hardening off to indoor light levels.'
+    };
+    document.getElementById('season-notes').innerHTML = `<p><span class="pill good">${season}</span></p><p>${notes[season] || ''}</p>`;
+  }
+
+  document.getElementById('prev-month').addEventListener('click', () => { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth()-1, 1); render(); });
+  document.getElementById('next-month').addEventListener('click', () => { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth()+1, 1); render(); });
+  document.getElementById('today-btn').addEventListener('click', () => { viewDate = new Date(); render(); });
+
+  render();
+</script>
+</body>
+</html>

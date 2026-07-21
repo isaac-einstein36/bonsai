@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — BonsaiOS</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B0F0D">
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+<div class="app-shell" id="app-shell"></div>
+
+<template id="tpl-content">
+  <div class="grid grid-cols-3" style="align-items:stretch;">
+    <div class="card" style="grid-column: span 1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;">
+      <h3 style="align-self:flex-start;">Overall Condition</h3>
+      <div id="ring-slot"></div>
+    </div>
+
+    <div class="card" style="grid-column: span 2;">
+      <div class="card-head">
+        <h3>Right Now</h3>
+        <button class="btn btn-ghost" id="refresh-weather" type="button" style="font-size:12px;">Refresh</button>
+      </div>
+      <div id="weather-slot">Loading current conditions…</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-4" style="margin-top:16px;">
+    <div class="card stat-card"><div class="stat-label">Days Owned</div><div class="stat-value" id="stat-days">—</div><div class="stat-sub" id="stat-season">—</div></div>
+    <div class="card stat-card"><div class="stat-label">Next Watering</div><div class="stat-value" id="stat-water">—</div><div class="stat-sub">watering cadence, from last log</div></div>
+    <div class="card stat-card"><div class="stat-label">Next Fertilizer</div><div class="stat-value" id="stat-fert">—</div><div class="stat-sub">seasonal schedule</div></div>
+    <div class="card stat-card"><div class="stat-label">Since Repot</div><div class="stat-value" id="stat-repot">—</div><div class="stat-sub">days</div></div>
+  </div>
+
+  <div class="grid grid-cols-2" style="margin-top:16px; align-items:start;">
+    <div class="card">
+      <div class="card-head"><h3>Today's Checklist</h3></div>
+      <div id="checklist-slot"><p>Loading…</p></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <h3>Recent Journal Entries</h3>
+        <a class="btn btn-ghost" href="journal.html" style="font-size:12px;">New entry →</a>
+      </div>
+      <div id="recent-slot"><p>Loading…</p></div>
+    </div>
+  </div>
+</template>
+
+<script type="module">
+  import { initShell } from './js/core/shell.js';
+  import { getEntries } from './js/core/storage.js';
+  import { getCurrentConditions } from './js/core/weather.js';
+  import { computeHealthScore, computeGrowthScore, nextWateringDate, nextFertilizerDate,
+           daysSinceRepot, daysSince, currentSeason, buildChecklist } from './js/core/health.js';
+  import { renderGrowthRingCard } from './js/core/growth-ring.js';
+  import { toast } from './js/core/toast.js';
+
+  const { cfg } = await initShell('dashboard');
+  document.getElementById('page-content').appendChild(document.getElementById('tpl-content').content.cloneNode(true));
+
+  async function renderStats(entries) {
+    const health = computeHealthScore(entries);
+    const growth = computeGrowthScore(entries);
+    document.getElementById('ring-slot').innerHTML = renderGrowthRingCard(
+      [
+        { value: health.score, color: 'var(--accent)', label: `Health — ${health.label}` },
+        { value: growth.score, color: 'var(--accent-2)', label: `Growth — ${growth.label}` },
+      ],
+      health.score != null ? health.score : '—',
+      'Health score',
+      168
+    );
+
+    const nw = nextWateringDate(entries, cfg.reminders.wateringDays);
+    const nf = nextFertilizerDate(entries, cfg.reminders.fertilizerDays);
+    document.getElementById('stat-days').textContent = daysSince(cfg.acquiredDate);
+    document.getElementById('stat-season').textContent = currentSeason();
+    document.getElementById('stat-water').textContent = nw ? relDay(nw) : 'Log first entry';
+    document.getElementById('stat-fert').textContent = nf ? relDay(nf) : 'Log first entry';
+    document.getElementById('stat-repot').textContent = daysSinceRepot(entries) ?? '—';
+
+    const checklist = buildChecklist(entries, cfg);
+    document.getElementById('checklist-slot').innerHTML = checklist.length
+      ? checklist.map((c) => `<div class="check-row"><input type="checkbox" disabled><label>${c.label}</label></div>`).join('')
+      : `<p>Nothing due today. 🌿</p>`;
+
+    const recent = entries.slice(0, 5);
+    document.getElementById('recent-slot').innerHTML = recent.length
+      ? recent.map((e) => `
+          <div class="entry-row">
+            <div class="entry-date">${e.date}</div>
+            <div class="entry-body">
+              <p>${e.notes ? escapeHtml(e.notes).slice(0, 110) : '(no notes)'}</p>
+              <div class="entry-tags">
+                ${e.watered ? `<span class="pill good">Watered</span>` : ''}
+                ${e.fertilized ? `<span class="pill warn">Fertilized</span>` : ''}
+                ${e.pruned ? `<span class="pill">Pruned</span>` : ''}
+                ${e.healthRating ? `<span class="pill">Rated ${e.healthRating}/5</span>` : ''}
+              </div>
+            </div>
+          </div>`).join('')
+      : `<div class="empty-state"><p>No journal entries yet. Your first entry starts the record.</p></div>`;
+  }
+
+  function relDay(dateStr) {
+    const d = daysSince(dateStr);
+    if (d === 0) return 'Today';
+    if (d > 0) return `${d}d overdue`;
+    return `in ${-d}d`;
+  }
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  const entries = await getEntries({ refresh: true, onRefreshed: renderStats });
+  await renderStats(entries);
+
+  async function loadWeather() {
+    const slot = document.getElementById('weather-slot');
+    try {
+      const w = await getCurrentConditions();
+      slot.innerHTML = `
+        <div class="grid grid-cols-4">
+          <div><div class="stat-label">Temp</div><div class="stat-value" style="font-size:20px;">${w.temperatureF ?? '—'}°F</div></div>
+          <div><div class="stat-label">Humidity</div><div class="stat-value" style="font-size:20px;">${w.humidityPct ?? '—'}%</div></div>
+          <div><div class="stat-label">Wind</div><div class="stat-value" style="font-size:20px;">${w.windMph ?? '—'} mph</div></div>
+          <div><div class="stat-label">Pressure</div><div class="stat-value" style="font-size:20px;">${w.pressureInHg ?? '—'} inHg</div></div>
+        </div>
+        <hr class="divider">
+        <div style="display:flex; flex-wrap:wrap; gap:16px; font-size:12.5px; color:var(--text-dim);">
+          <span>☀ Sunrise ${w.sunrise ? fmtTime(w.sunrise) : '—'}</span>
+          <span>🌙 Sunset ${w.sunset ? fmtTime(w.sunset) : '—'}</span>
+          <span>${w.moonPhase}</span>
+          <span>UV ${w.uvIndex ?? 'N/A'}</span>
+          <span>${w.description || ''}</span>
+        </div>
+        <div style="margin-top:8px; font-size:11px; color:var(--text-faint);">Source: ${w.source} (station ${w.station}), observed ${new Date(w.observedAt).toLocaleTimeString()}</div>
+      `;
+    } catch (e) {
+      slot.innerHTML = `<p>Couldn't reach NOAA right now (${escapeHtml(e.message)}). Check your location in Settings, or try again.</p>`;
+    }
+  }
+  function fmtTime(d) { return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+
+  document.getElementById('refresh-weather').addEventListener('click', () => { loadWeather(); toast('Refreshing weather…'); });
+  loadWeather();
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(() => {});
+</script>
+</body>
+</html>

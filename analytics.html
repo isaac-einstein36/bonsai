@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics — BonsaiOS</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B0F0D">
+<link rel="stylesheet" href="css/main.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app-shell" id="app-shell"></div>
+
+<template id="tpl-content">
+  <div class="grid grid-cols-2">
+    <div class="card"><h3>Health rating over time</h3><div class="chart-box"><canvas id="chart-health"></canvas></div></div>
+    <div class="card"><h3>Growth: flowers & buds</h3><div class="chart-box"><canvas id="chart-growth"></canvas></div></div>
+  </div>
+  <div class="grid grid-cols-2" style="margin-top:16px;">
+    <div class="card"><h3>Temperature & humidity trends</h3><div class="chart-box"><canvas id="chart-weather"></canvas></div></div>
+    <div class="card"><h3>Watering & fertilizing frequency (by month)</h3><div class="chart-box"><canvas id="chart-freq"></canvas></div></div>
+  </div>
+  <div class="grid grid-cols-2" style="margin-top:16px;">
+    <div class="card"><h3>Weather correlation: temperature vs. health rating</h3><div class="chart-box"><canvas id="chart-corr"></canvas></div></div>
+    <div class="card">
+      <h3>Event history</h3>
+      <div id="history-slot" style="max-height:260px; overflow:auto;"><p>Loading…</p></div>
+    </div>
+  </div>
+</template>
+
+<script type="module">
+  import { initShell } from './js/core/shell.js';
+  import { getEntries } from './js/core/storage.js';
+
+  await initShell('analytics');
+  document.getElementById('page-content').appendChild(document.getElementById('tpl-content').content.cloneNode(true));
+
+  const entries = (await getEntries({ refresh: true, onRefreshed: draw })).slice().sort((a,b) => a.date < b.date ? -1 : 1);
+  draw(entries);
+
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  const colors = { accent: () => css('--accent'), accent2: () => css('--accent-2'), dim: () => css('--text-dim'), border: () => css('--border') };
+  let charts = {};
+
+  function draw(list) {
+    list = list.slice().sort((a,b) => a.date < b.date ? -1 : 1);
+    const labels = list.map(e => e.date);
+
+    mkLine('chart-health', labels, [
+      { label: 'Health rating (/5)', data: list.map(e => e.healthRating ?? null), color: colors.accent() }
+    ], { min: 0, max: 5 });
+
+    mkLine('chart-growth', labels, [
+      { label: 'Flowers', data: list.map(e => e.flowers ?? null), color: colors.accent2() },
+      { label: 'Buds', data: list.map(e => e.buds ?? null), color: colors.accent() }
+    ]);
+
+    mkLine('chart-weather', labels, [
+      { label: 'Temp (°F)', data: list.map(e => e.temperature ?? null), color: colors.accent2() },
+      { label: 'Humidity (%)', data: list.map(e => e.humidity ?? null), color: colors.accent() }
+    ]);
+
+    // Monthly watering/fertilizing counts
+    const monthMap = {};
+    for (const e of list) {
+      const key = e.date.slice(0, 7);
+      monthMap[key] = monthMap[key] || { water: 0, fert: 0 };
+      if (e.watered) monthMap[key].water++;
+      if (e.fertilized) monthMap[key].fert++;
+    }
+    const months = Object.keys(monthMap).sort();
+    mkBar('chart-freq', months, [
+      { label: 'Watered', data: months.map(m => monthMap[m].water), color: colors.accent() },
+      { label: 'Fertilized', data: months.map(m => monthMap[m].fert), color: colors.accent2() }
+    ]);
+
+    // Correlation scatter
+    const points = list.filter(e => e.temperature != null && e.healthRating != null)
+      .map(e => ({ x: e.temperature, y: e.healthRating }));
+    mkScatter('chart-corr', points);
+
+    // Event history list
+    const history = list.slice().reverse().filter(e => e.watered || e.fertilized || e.pruned || e.repotted)
+      .map(e => {
+        const tags = [];
+        if (e.watered) tags.push('Watered');
+        if (e.fertilized) tags.push('Fertilized');
+        if (e.pruned) tags.push('Pruned');
+        if (e.repotted) tags.push('Repotted');
+        return `<div class="entry-row"><div class="entry-date">${e.date}</div><div class="entry-body"><p>${tags.join(' · ')}</p></div></div>`;
+      });
+    document.getElementById('history-slot').innerHTML = history.length ? history.join('') : '<p>No care events logged yet.</p>';
+  }
+
+  function baseOpts(extra = {}) {
+    return {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: colors.dim() } } },
+      scales: {
+        x: { ticks: { color: colors.dim(), maxTicksLimit: 8 }, grid: { color: colors.border() } },
+        y: { ticks: { color: colors.dim() }, grid: { color: colors.border() }, ...extra }
+      }
+    };
+  }
+
+  function mkLine(id, labels, series, yExtra = {}) {
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(document.getElementById(id), {
+      type: 'line',
+      data: { labels, datasets: series.map(s => ({ label: s.label, data: s.data, borderColor: s.color, backgroundColor: s.color, tension: 0.3, spanGaps: true, pointRadius: 2 })) },
+      options: baseOpts(yExtra)
+    });
+  }
+  function mkBar(id, labels, series) {
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(document.getElementById(id), {
+      type: 'bar',
+      data: { labels, datasets: series.map(s => ({ label: s.label, data: s.data, backgroundColor: s.color })) },
+      options: baseOpts()
+    });
+  }
+  function mkScatter(id, points) {
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(document.getElementById(id), {
+      type: 'scatter',
+      data: { datasets: [{ label: 'Temp vs Health', data: points, backgroundColor: colors.accent() }] },
+      options: { ...baseOpts({ min: 0, max: 5 }), scales: { x: { title: { display: true, text: '°F', color: colors.dim() }, ticks: { color: colors.dim() }, grid: { color: colors.border() } }, y: { title: { display: true, text: 'Health /5', color: colors.dim() }, min: 0, max: 5, ticks: { color: colors.dim() }, grid: { color: colors.border() } } } }
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Handbook — BonsaiOS</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B0F0D">
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+<div class="app-shell" id="app-shell"></div>
+
+<template id="tpl-content">
+  <div class="card">
+    <h3>Gardenia Bonsai Handbook</h3>
+    <p>This section will hold the full 100–150 page owner's handbook (biology, Minneapolis climate guide, watering, fertilization, pruning, repotting, pests, winter care, and the 10/20/40-year development plan).</p>
+    <p>It's the second major deliverable in the project spec — say the word and we'll write it next, either as a printable Word/PDF document or as chapters rendered directly on this page.</p>
+    <div class="empty-state">
+      <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16"/></svg>
+      <p>Handbook not written yet.</p>
+    </div>
+  </div>
+</template>
+
+<script type="module">
+  import { initShell } from './js/core/shell.js';
+  await initShell('handbook');
+  document.getElementById('page-content').appendChild(document.getElementById('tpl-content').content.cloneNode(true));
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "_comment": "Reference only — real config lives in browser localStorage, set via the Settings page. Copy values from here if you want to Import Settings on a fresh browser.",
+  "treeName": "Gardenia Bonsai",
+  "species": "Gardenia jasminoides",
+  "acquiredDate": "2026-07-01",
+  "location": { "name": "Minneapolis, MN", "lat": 44.9778, "lon": -93.2650 },
+  "github": { "owner": "", "repo": "", "branch": "main", "token": "", "entriesPath": "bonsai/entries" },
+  "sheets": { "webAppUrl": "" },
+  "weather": { "openWeatherKey": "" },
+  "theme": "dark",
+  "reminders": { "wateringDays": 3, "fertilizerDays": 14, "repotMonths": 24 }
+}

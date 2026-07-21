@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gallery — BonsaiOS</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B0F0D">
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+<div class="app-shell" id="app-shell"></div>
+
+<template id="tpl-content">
+  <div class="card">
+    <div class="card-head">
+      <h3>Search & filter</h3>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Search notes</label><input type="text" id="search-box" placeholder="e.g. bloom, repot, pest"></div>
+      <div class="field"><label>Group by</label>
+        <select id="group-by"><option value="month">Month</option><option value="year">Year</option></select>
+      </div>
+    </div>
+  </div>
+  <div id="gallery-groups" style="margin-top:16px;"><p>Loading…</p></div>
+
+  <div id="lightbox" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.82); z-index:60; align-items:center; justify-content:center; flex-direction:column; gap:10px;">
+    <img id="lightbox-img" style="max-width:88vw; max-height:78vh; border-radius:10px;">
+    <div id="lightbox-caption" style="color:#fff; font-family:var(--font-mono); font-size:13px;"></div>
+    <button class="btn" id="lightbox-close" type="button">Close</button>
+  </div>
+</template>
+
+<script type="module">
+  import { initShell } from './js/core/shell.js';
+  import { getEntries, photoUrl } from './js/core/storage.js';
+
+  await initShell('gallery');
+  document.getElementById('page-content').appendChild(document.getElementById('tpl-content').content.cloneNode(true));
+
+  const entries = await getEntries({ refresh: true, onRefreshed: renderAll });
+  let all = entries;
+
+  function withPhotos(list) { return list.filter(e => e.photos && e.photos.length); }
+
+  function groupKey(date, mode) {
+    const [y, m] = date.split('-');
+    return mode === 'year' ? y : `${y}-${m}`;
+  }
+  function groupLabel(key, mode) {
+    if (mode === 'year') return key;
+    const [y, m] = key.split('-');
+    return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  }
+
+  function renderAll() { render(all); }
+
+  function render(list) {
+    const mode = document.getElementById('group-by').value;
+    const q = document.getElementById('search-box').value.trim().toLowerCase();
+    let filtered = withPhotos(list);
+    if (q) filtered = filtered.filter(e => (e.notes || '').toLowerCase().includes(q));
+
+    if (!filtered.length) {
+      document.getElementById('gallery-groups').innerHTML = `<div class="card empty-state"><p>No photos yet — attach one next time you log a journal entry.</p></div>`;
+      return;
+    }
+
+    const groups = {};
+    for (const e of filtered) {
+      const key = groupKey(e.date, mode);
+      (groups[key] = groups[key] || []).push(e);
+    }
+    const keys = Object.keys(groups).sort().reverse();
+
+    document.getElementById('gallery-groups').innerHTML = keys.map(key => `
+      <div class="card" style="margin-bottom:14px;">
+        <h3>${groupLabel(key, mode)}</h3>
+        <div class="gallery-grid" style="margin-top:10px;">
+          ${groups[key].map(e => e.photos.map(p => `
+            <div class="gallery-tile" data-date="${e.date}" data-src="${photoUrl(p)}">
+              <img src="${photoUrl(p)}" loading="lazy" alt="Bonsai photo ${e.date}">
+              <div class="gtile-date">${e.date}</div>
+            </div>`).join('')).join('')}
+        </div>
+      </div>
+    `).join('');
+
+    document.querySelectorAll('.gallery-tile').forEach(el => {
+      el.addEventListener('click', () => {
+        document.getElementById('lightbox-img').src = el.dataset.src;
+        document.getElementById('lightbox-caption').textContent = el.dataset.date;
+        document.getElementById('lightbox').style.display = 'flex';
+      });
+    });
+  }
+
+  document.getElementById('search-box').addEventListener('input', () => render(all));
+  document.getElementById('group-by').addEventListener('change', () => render(all));
+  document.getElementById('lightbox-close').addEventListener('click', () => { document.getElementById('lightbox').style.display = 'none'; });
+  document.getElementById('lightbox').addEventListener('click', (e) => { if (e.target.id === 'lightbox') e.currentTarget.style.display = 'none'; });
+
+  render(all);
+</script>
+</body>
+</html>

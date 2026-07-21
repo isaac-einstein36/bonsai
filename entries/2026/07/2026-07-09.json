@@ -1,0 +1,20 @@
+{
+  "date": "2026-07-09",
+  "time": "08:15",
+  "temperature": 74,
+  "humidity": 62,
+  "wind": 6,
+  "pressure": 29.94,
+  "weatherDescription": "Partly cloudy, light breeze",
+  "watered": true,
+  "fertilized": false,
+  "pruned": false,
+  "repotted": false,
+  "flowers": 0,
+  "buds": 4,
+  "leafCondition": "Good",
+  "pestObservations": "None observed",
+  "healthRating": 4,
+  "notes": "Healthy new growth observed on the east-facing branch. Buds swelling nicely — first bloom of the season expected within 2-3 weeks.",
+  "photos": []
+}
