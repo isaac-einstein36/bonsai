@@ -23,6 +23,22 @@ export async function pushEntryToSheet(entry) {
   return json;
 }
 
+export async function deleteEntryFromSheet(dateStr) {
+  const cfg = getConfig();
+  const url = cfg.sheets.webAppUrl;
+  if (!url) return; // Sheets optional — silently skip if not configured
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'deleteEntry', date: dateStr })
+  });
+  const text = await res.text();
+  let json;
+  try { json = JSON.parse(text); } catch { throw new Error(`Sheets delete returned unexpected response: ${text.slice(0, 200)}`); }
+  if (!json.ok) throw new Error(json.error || 'Sheets delete failed');
+  return json;
+}
+
 export async function testSheetsConnection() {
   const cfg = getConfig();
   const url = cfg.sheets.webAppUrl;

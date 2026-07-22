@@ -88,7 +88,7 @@ export async function listAllFiles(rootPath) {
     .filter(item => item.type === 'blob' && item.path.startsWith(rootPath) && item.path.endsWith('.json'));
 }
 
-/** Fetch and parse every journal entry JSON file under entriesPath. */
+/** Fetch and parse every journal entry JSON file under entriesPath. Each entry gets a hidden __path so it can be edited/deleted later. */
 export async function fetchAllEntries() {
   const cfg = getConfig();
   const files = await listAllFiles(cfg.github.entriesPath);
@@ -96,13 +96,29 @@ export async function fetchAllEntries() {
   for (const f of files) {
     try {
       const file = await getFile(f.path);
-      entries.push(JSON.parse(file.content));
+      const parsed = JSON.parse(file.content);
+      parsed.__path = f.path;
+      entries.push(parsed);
     } catch (e) {
       console.warn('Skipping unreadable entry', f.path, e);
     }
   }
   entries.sort((a, b) => (a.date < b.date ? 1 : -1));
   return entries;
+}
+
+/** Delete a file (used to remove a journal entry). Requires the current sha, fetched automatically. */
+export async function deleteFile(path, message) {
+  const cfg = getConfig();
+  const existing = await getFile(path);
+  if (!existing) return { alreadyGone: true };
+  const res = await ghFetch(`/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, sha: existing.sha, branch: cfg.github.branch })
+  });
+  if (!res.ok) throw new Error(`GitHub delete failed (${res.status}): ${await res.text()}`);
+  return res.json();
 }
 
 /** Save one journal entry as entries/YYYY/MM/YYYY-MM-DD.json, committed to GitHub. */

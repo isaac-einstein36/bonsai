@@ -5,7 +5,7 @@
 
 import { getConfig, isGithubConfigured } from './config.js';
 import * as gh from './github.js';
-import { pushEntryToSheet } from './sheets.js';
+import { pushEntryToSheet, deleteEntryFromSheet } from './sheets.js';
 
 const CACHE_KEY = 'bonsaios.entries.cache';
 
@@ -58,6 +58,37 @@ export async function saveEntry(entry) {
   // Always update local cache regardless of remote success, so nothing is lost.
   const cache = readCache().filter((e) => e.date !== entry.date);
   cache.push(entry);
+  writeCache(cache);
+
+  return report;
+}
+
+/** Delete an entry: removes the GitHub file (source of truth), removes the Sheets row, updates local cache. */
+export async function deleteEntry(entry) {
+  const report = { github: false, sheets: false, errors: [] };
+
+  if (isGithubConfigured() && entry.__path) {
+    try {
+      await gh.deleteFile(entry.__path, `Journal: delete ${entry.date}`);
+      report.github = true;
+    } catch (e) {
+      report.errors.push(`GitHub: ${e.message}`);
+    }
+  } else if (!entry.__path) {
+    report.errors.push('No GitHub file path on this entry (was it ever synced?) — removed locally only.');
+  }
+
+  const cfg = getConfig();
+  if (cfg.sheets.webAppUrl) {
+    try {
+      await deleteEntryFromSheet(entry.date);
+      report.sheets = true;
+    } catch (e) {
+      report.errors.push(`Sheets: ${e.message}`);
+    }
+  }
+
+  const cache = readCache().filter((e) => e.date !== entry.date);
   writeCache(cache);
 
   return report;
