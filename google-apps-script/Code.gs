@@ -52,7 +52,8 @@ function doPost(e) {
 
       // Upsert by date: if a row for this date already exists, overwrite it
       // instead of duplicating, so re-saving an entry stays idempotent.
-      const dates = sheet.getRange(2, 1, Math.max(sheet.getLastRow() - 1, 0), 1).getValues().flat();
+      const lastRow = sheet.getLastRow();
+      const dates = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, 1).getValues().flat() : [];
       const existingRowIndex = dates.findIndex((d) => formatDate_(d) === entry.date);
 
       const row = [
@@ -75,6 +76,18 @@ function doPost(e) {
       }
 
       return jsonOut_({ ok: true, row: existingRowIndex >= 0 ? existingRowIndex + 2 : sheet.getLastRow() });
+    }
+
+    if (payload.action === 'deleteEntry') {
+      const sheet = getSheet_();
+      const lastRow = sheet.getLastRow();
+      const dates = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, 1).getValues().flat() : [];
+      const existingRowIndex = dates.findIndex((d) => formatDate_(d) === payload.date);
+      if (existingRowIndex >= 0) {
+        sheet.deleteRow(existingRowIndex + 2);
+        return jsonOut_({ ok: true, deleted: true });
+      }
+      return jsonOut_({ ok: true, deleted: false, message: 'No matching row found.' });
     }
 
     return jsonOut_({ ok: false, error: 'Unknown action: ' + payload.action });

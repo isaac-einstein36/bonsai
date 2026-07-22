@@ -19,6 +19,10 @@
         <button class="btn btn-ghost" id="fill-weather" type="button" style="font-size:12px;">Auto-fill weather</button>
       </div>
       <form id="entry-form">
+        <div id="edit-banner" style="display:none; margin-bottom:12px; padding:8px 12px; border-radius:8px; background:var(--surface-2); border:1px solid var(--border); font-size:12.5px; display:flex; align-items:center; justify-content:space-between;">
+          <span>Editing entry for <b id="edit-banner-date" class="mono"></b></span>
+          <button type="button" class="btn btn-ghost" id="cancel-edit" style="font-size:12px;">Cancel</button>
+        </div>
         <div class="field-row">
           <div class="field"><label>Date</label><input type="date" id="f-date" required></div>
           <div class="field"><label>Time</label><input type="time" id="f-time"></div>
@@ -61,8 +65,11 @@
           <p style="font-size:11.5px; margin-top:4px;">Uploaded photos commit straight into <code>bonsai/images/</code> in your repo.</p>
         </div>
 
-        <button class="btn btn-primary" type="submit" id="save-btn">Save entry</button>
-        <span id="save-status" style="margin-left:10px; font-size:12.5px; color:var(--text-dim);"></span>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="btn btn-primary" type="submit" id="save-btn">Save entry</button>
+          <button class="btn" type="button" id="delete-btn" style="display:none;">Delete entry</button>
+        </div>
+        <span id="save-status" style="display:block; margin-top:8px; font-size:12.5px; color:var(--text-dim);"></span>
       </form>
     </div>
 
@@ -77,14 +84,25 @@
       <div id="recent-mini"><p style="color:var(--text-faint); font-size:12.5px;">Loading…</p></div>
     </div>
   </div>
+
+  <div class="card" style="margin-top:16px;">
+    <div class="card-head">
+      <h3>All Entries</h3>
+      <input type="text" id="entry-filter" placeholder="Filter by date or note text…" style="max-width:260px;">
+    </div>
+    <div id="all-entries-slot"><p>Loading…</p></div>
+  </div>
 </template>
 
 <script type="module">
   import { initShell, escapeHtml } from './js/core/shell.js';
   import { getConfig, isGithubConfigured, isSheetsConfigured } from './js/core/config.js';
-  import { getEntries, saveEntry, uploadPhoto } from './js/core/storage.js';
+  import { getEntries, saveEntry, uploadPhoto, deleteEntry } from './js/core/storage.js';
   import { getCurrentConditions } from './js/core/weather.js';
   import { toast } from './js/core/toast.js';
+
+  let editingEntry = null; // the full entry object currently loaded for editing, or null for a new entry
+  let allEntries = [];
 
   const { cfg } = await initShell('journal');
   document.getElementById('page-content').appendChild(document.getElementById('tpl-content').content.cloneNode(true));
@@ -125,7 +143,110 @@
       ? recent.map(e => `<div class="entry-row"><div class="entry-date">${e.date}</div><div class="entry-body"><p>${e.watered ? 'Watered' : ''}${e.fertilized ? ' · Fertilized' : ''}${!e.watered && !e.fertilized ? 'Check-in' : ''}</p></div></div>`).join('')
       : `<p style="color:var(--text-faint); font-size:12.5px;">No entries yet.</p>`;
   }
+
+  async function loadAllEntries() {
+    allEntries = await getEntries({ refresh: true, onRefreshed: (fresh) => { allEntries = fresh; renderAllEntries(); } });
+    renderAllEntries();
+  }
+
+  function renderAllEntries() {
+    const q = document.getElementById('entry-filter').value.trim().toLowerCase();
+    const list = allEntries.filter(e => !q || e.date.includes(q) || (e.notes || '').toLowerCase().includes(q));
+    document.getElementById('all-entries-slot').innerHTML = list.length
+      ? list.map((e, i) => `
+          <div class="entry-row">
+            <div class="entry-date">${e.date}</div>
+            <div class="entry-body" style="flex:1;">
+              <p>${e.notes ? escapeHtml(e.notes).slice(0, 130) : '(no notes)'}</p>
+              <div class="entry-tags">
+                ${e.watered ? `<span class="pill good">Watered</span>` : ''}
+                ${e.fertilized ? `<span class="pill warn">Fertilized</span>` : ''}
+                ${e.pruned ? `<span class="pill">Pruned</span>` : ''}
+                ${e.healthRating ? `<span class="pill">Rated ${e.healthRating}/5</span>` : ''}
+              </div>
+            </div>
+            <div style="display:flex; gap:6px; flex-shrink:0;">
+              <button class="btn btn-ghost" type="button" data-edit="${e.date}" style="font-size:12px;">Edit</button>
+              <button class="btn btn-ghost" type="button" data-delete="${e.date}" style="font-size:12px; color:var(--danger-solid);">Delete</button>
+            </div>
+          </div>`).join('')
+      : `<div class="empty-state"><p>No entries match.</p></div>`;
+
+    document.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', () => {
+      const entry = allEntries.find(e => e.date === btn.dataset.edit);
+      if (entry) populateForm(entry);
+    }));
+    document.querySelectorAll('[data-delete]').forEach(btn => btn.addEventListener('click', async () => {
+      const entry = allEntries.find(e => e.date === btn.dataset.delete);
+      if (!entry) return;
+      if (!confirm(`Delete the journal entry for ${entry.date}? This removes it from GitHub${entry.__path ? '' : ' (local only)'} and Sheets.`)) return;
+      const report = await deleteEntry(entry);
+      if (report.errors.length) toast(report.errors.join(' · '), { error: true, duration: 5000 });
+      else toast('Entry deleted.');
+      if (editingEntry && editingEntry.date === entry.date) resetForm();
+      loadAllEntries();
+      renderRecent();
+    }));
+  }
+
+  function populateForm(entry) {
+    editingEntry = entry;
+    document.getElementById('edit-banner').style.display = 'flex';
+    document.getElementById('edit-banner-date').textContent = entry.date;
+    document.getElementById('delete-btn').style.display = 'inline-flex';
+    document.getElementById('save-btn').textContent = 'Update entry';
+
+    document.getElementById('f-date').value = entry.date;
+    document.getElementById('f-date').disabled = true; // date is the file key — changing it would orphan the old file
+    document.getElementById('f-time').value = entry.time || '';
+    document.getElementById('f-temp').value = entry.temperature ?? '';
+    document.getElementById('f-humidity').value = entry.humidity ?? '';
+    document.getElementById('f-wind').value = entry.wind ?? '';
+    document.getElementById('f-pressure').value = entry.pressure ?? '';
+    document.getElementById('f-weather-desc').value = entry.weatherDescription || '';
+    document.getElementById('f-watered').checked = !!entry.watered;
+    document.getElementById('f-fertilized').checked = !!entry.fertilized;
+    document.getElementById('f-pruned').checked = !!entry.pruned;
+    document.getElementById('f-repotted').checked = !!entry.repotted;
+    document.getElementById('f-flowers').value = entry.flowers ?? '';
+    document.getElementById('f-buds').value = entry.buds ?? '';
+    document.getElementById('f-leaf').value = entry.leafCondition || '';
+    document.getElementById('f-pests').value = entry.pestObservations || '';
+    document.getElementById('f-rating').value = entry.healthRating || 3;
+    document.getElementById('rating-out').textContent = entry.healthRating || 3;
+    document.getElementById('f-notes').value = entry.notes || '';
+    document.getElementById('save-status').textContent = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function resetForm() {
+    editingEntry = null;
+    document.getElementById('edit-banner').style.display = 'none';
+    document.getElementById('delete-btn').style.display = 'none';
+    document.getElementById('save-btn').textContent = 'Save entry';
+    document.getElementById('entry-form').reset();
+    document.getElementById('f-date').disabled = false;
+    document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('f-time').value = new Date().toTimeString().slice(0, 5);
+    document.getElementById('rating-out').textContent = '3';
+    document.getElementById('save-status').textContent = '';
+  }
+
+  document.getElementById('cancel-edit').addEventListener('click', resetForm);
+  document.getElementById('entry-filter').addEventListener('input', renderAllEntries);
+  document.getElementById('delete-btn').addEventListener('click', async () => {
+    if (!editingEntry) return;
+    if (!confirm(`Delete the journal entry for ${editingEntry.date}?`)) return;
+    const report = await deleteEntry(editingEntry);
+    if (report.errors.length) toast(report.errors.join(' · '), { error: true, duration: 5000 });
+    else toast('Entry deleted.');
+    resetForm();
+    loadAllEntries();
+    renderRecent();
+  });
+
   renderRecent();
+  loadAllEntries();
 
   document.getElementById('entry-form').addEventListener('submit', async (ev) => {
     ev.preventDefault();
@@ -173,7 +294,10 @@
       else if (report.errors.length) toast(report.errors.join(' · '), { error: true, duration: 5000 });
 
       status.textContent = `GitHub: ${report.github ? 'saved' : 'skipped/failed'} · Sheets: ${report.sheets ? 'synced' : 'skipped/failed'}`;
+      const wasEditing = !!editingEntry;
       renderRecent();
+      loadAllEntries();
+      if (wasEditing) setTimeout(resetForm, 1200);
     } catch (e) {
       status.textContent = '';
       toast(`Save failed: ${e.message}`, { error: true, duration: 5000 });
