@@ -1,0 +1,20 @@
+{
+  "date": "2026-07-16",
+  "time": "21:01",
+  "temperature": 73,
+  "humidity": 47,
+  "wind": null,
+  "pressure": 29.99,
+  "weatherDescription": "Partly Cloudy",
+  "watered": false,
+  "fertilized": false,
+  "pruned": false,
+  "repotted": false,
+  "flowers": null,
+  "buds": null,
+  "leafCondition": null,
+  "pestObservations": null,
+  "healthRating": 3,
+  "notes": "test2",
+  "photos": []
+}
