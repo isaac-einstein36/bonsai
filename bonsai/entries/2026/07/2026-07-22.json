@@ -1,0 +1,22 @@
+{
+  "date": "2026-07-22",
+  "time": "20:31",
+  "temperature": 75,
+  "humidity": 44,
+  "wind": 37,
+  "pressure": 29.98,
+  "weatherDescription": "Partly Cloudy",
+  "watered": true,
+  "fertilized": false,
+  "pruned": true,
+  "repotted": false,
+  "flowers": null,
+  "buds": null,
+  "leafCondition": null,
+  "pestObservations": "none",
+  "healthRating": 3,
+  "notes": "Some white spots on leaves but mostly dust from construction ",
+  "photos": [
+    "bonsai/images/2026/07/2026-07-22-image.jpg"
+  ]
+}
