@@ -1,22 +1,20 @@
 {
   "date": "2026-07-22",
-  "time": "20:31",
-  "temperature": 75,
-  "humidity": 44,
-  "wind": 37,
-  "pressure": 29.98,
-  "weatherDescription": "Partly Cloudy",
-  "watered": true,
+  "time": "07:24",
+  "temperature": 61,
+  "humidity": 63,
+  "wind": 25,
+  "pressure": 30.14,
+  "weatherDescription": "Cloudy",
+  "watered": false,
   "fertilized": false,
-  "pruned": true,
+  "pruned": false,
   "repotted": false,
   "flowers": null,
   "buds": null,
   "leafCondition": null,
-  "pestObservations": "none",
+  "pestObservations": "None",
   "healthRating": 3,
-  "notes": "Some white spots on leaves but mostly dust from construction ",
-  "photos": [
-    "bonsai/images/2026/07/2026-07-22-image.jpg"
-  ]
+  "notes": "Soil was damp and didn’t need watered.\n\nDust spots on leaves that could be wiped off.",
+  "photos": []
 }
