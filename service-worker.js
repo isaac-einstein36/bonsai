@@ -4,7 +4,7 @@
 // (api.github.com, api.weather.gov, script.google.com, fonts, Chart.js CDN) —
 // those need the network and fail gracefully in-app if unreachable.
 
-const CACHE_NAME = 'bonsaios-shell-v1';
+const CACHE_NAME = 'bonsaios-shell-v2';
 const SHELL_FILES = [
   'dashboard.html', 'journal.html', 'calendar.html', 'gallery.html',
   'analytics.html', 'settings.html', 'handbook.html',
