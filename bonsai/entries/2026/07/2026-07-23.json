@@ -1,0 +1,20 @@
+{
+  "date": "2026-07-23",
+  "time": "08:41",
+  "temperature": 64,
+  "humidity": 64,
+  "wind": 12,
+  "pressure": 30.21,
+  "weatherDescription": "Clear",
+  "watered": true,
+  "fertilized": false,
+  "pruned": false,
+  "repotted": false,
+  "flowers": null,
+  "buds": null,
+  "leafCondition": null,
+  "pestObservations": "None",
+  "healthRating": 5,
+  "notes": "Slightly damp so did light watering ",
+  "photos": []
+}
