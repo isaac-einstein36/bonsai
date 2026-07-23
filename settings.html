@@ -151,8 +151,8 @@
     const out = $('sheets-test-result');
     out.textContent = 'Testing…';
     try {
-      await testSheetsConnection();
-      out.textContent = '✓ Apps Script responded';
+      const res = await testSheetsConnection();
+      out.textContent = `✓ ${res.message || 'Apps Script responded'}`;
       out.style.color = 'var(--good)';
     } catch (e) {
       out.textContent = `✗ ${e.message}`;

@@ -281,8 +281,9 @@
       const files = document.getElementById('f-photos').files;
       if (files.length && isGithubConfigured(cfg)) {
         status.textContent = `Uploading ${files.length} photo(s)…`;
+        let i = 0;
         for (const file of files) {
-          const path = await uploadPhoto(file, date);
+          const path = await uploadPhoto(file, date, i++);
           entry.photos.push(path);
         }
       }
@@ -290,10 +291,11 @@
       status.textContent = 'Committing to GitHub + syncing Sheets…';
       const report = await saveEntry(entry);
 
-      if (report.github) toast('Saved and committed to GitHub.');
-      else if (report.errors.length) toast(report.errors.join(' · '), { error: true, duration: 5000 });
+      if (report.errors.length) toast(report.errors.join(' · '), { error: true, duration: 6000 });
+      else toast('Saved and synced.');
 
-      status.textContent = `GitHub: ${report.github ? 'saved' : 'skipped/failed'} · Sheets: ${report.sheets ? 'synced' : 'skipped/failed'}`;
+      status.innerHTML = `GitHub: ${report.github ? 'saved' : 'skipped/failed'} · Sheets: ${report.sheets ? 'synced' : 'skipped/failed'}`
+        + (report.errors.length ? `<br><span style="color:var(--danger-solid);">${report.errors.map(escapeHtml).join('<br>')}</span>` : '');
       const wasEditing = !!editingEntry;
       renderRecent();
       loadAllEntries();

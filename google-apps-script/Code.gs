@@ -23,7 +23,28 @@ const SHEET_NAME = 'Journal';
 const HEADERS = ['Date', 'Weather', 'Temperature', 'Humidity', 'Watered', 'Fertilized', 'Flowers', 'Notes', 'Photo link', 'Health'];
 
 function getSheet_() {
-  const ss = SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+  const props = PropertiesService.getScriptProperties();
+  let ss;
+
+  if (SPREADSHEET_ID) {
+    ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  } else {
+    const active = SpreadsheetApp.getActiveSpreadsheet();
+    if (active) {
+      ss = active;
+    } else {
+      // Standalone script with no bound sheet — create one once and remember its ID
+      // in Script Properties so we reuse the same spreadsheet on every future call.
+      const savedId = props.getProperty('BONSAIOS_SHEET_ID');
+      if (savedId) {
+        ss = SpreadsheetApp.openById(savedId);
+      } else {
+        ss = SpreadsheetApp.create('BonsaiOS Journal');
+        props.setProperty('BONSAIOS_SHEET_ID', ss.getId());
+      }
+    }
+  }
+
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
@@ -43,7 +64,8 @@ function doPost(e) {
 
   try {
     if (payload.action === 'ping') {
-      return jsonOut_({ ok: true, message: 'BonsaiOS Apps Script is reachable.' });
+      const sheet = getSheet_(); // exercises spreadsheet access so "Test connection" is meaningful
+      return jsonOut_({ ok: true, message: 'Reachable and writing to: ' + sheet.getParent().getUrl() });
     }
 
     if (payload.action === 'appendEntry') {

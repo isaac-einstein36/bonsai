@@ -94,12 +94,14 @@ export async function deleteEntry(entry) {
   return report;
 }
 
-/** Upload a photo (File) into the repo under bonsai/images/YYYY/MM/, returns the relative path to store on the entry. */
-export async function uploadPhoto(file, dateStr) {
+/** Upload a photo (File) into the repo under bonsai/images/YYYY/MM/, returns the relative path to store on the entry.
+ *  `index` disambiguates multiple photos saved in the same batch (phones often reuse generic filenames like IMG_0001.jpg). */
+export async function uploadPhoto(file, dateStr, index = 0) {
   if (!isGithubConfigured()) throw new Error('Connect GitHub in Settings before uploading photos.');
   const [y, m] = dateStr.split('-');
   const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-  const path = `bonsai/images/${y}/${m}/${dateStr}-${safeName}`;
+  const unique = `${Date.now()}-${index}`;
+  const path = `bonsai/images/${y}/${m}/${dateStr}-${unique}-${safeName}`;
 
   const buf = await file.arrayBuffer();
   const bytes = new Uint8Array(buf);
@@ -108,6 +110,14 @@ export async function uploadPhoto(file, dateStr) {
   const base64 = btoa(binary);
 
   const cfg = getConfig();
+  const body = { message: `Photo: ${dateStr} — ${file.name}`, content: base64, branch: cfg.github.branch };
+
+  // Defensive check: even with a unique path this should never already exist,
+  // but if it somehow does, GitHub requires the current sha to overwrite it —
+  // omitting it is exactly what produced the 422 "sha wasn't supplied" error.
+  const existing = await gh.getFile(path).catch(() => null);
+  if (existing) body.sha = existing.sha;
+
   const res = await fetch(`https://api.github.com/repos/${cfg.github.owner}/${cfg.github.repo}/contents/${path}`, {
     method: 'PUT',
     headers: {
@@ -115,7 +125,7 @@ export async function uploadPhoto(file, dateStr) {
       'Accept': 'application/vnd.github+json',
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ message: `Photo: ${dateStr} — ${file.name}`, content: base64, branch: cfg.github.branch })
+    body: JSON.stringify(body)
   });
   if (!res.ok) throw new Error(`Photo upload failed (${res.status}): ${await res.text()}`);
   return path;
