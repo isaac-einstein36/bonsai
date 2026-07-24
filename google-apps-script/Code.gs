@@ -18,6 +18,7 @@
  * Date | Weather | Temperature | Humidity | Watered | Fertilized | Flowers | Notes | Photo link | Health
  */
 
+const CODE_VERSION = 'v3-2026-07-24';
 const SPREADSHEET_ID = ''; // leave blank to use the container-bound spreadsheet
 const SHEET_NAME = 'Journal';
 const HEADERS = ['Date', 'Weather', 'Temperature', 'Humidity', 'Watered', 'Fertilized', 'Flowers', 'Notes', 'Photo link', 'Health'];
@@ -65,7 +66,7 @@ function doPost(e) {
   try {
     if (payload.action === 'ping') {
       const sheet = getSheet_(); // exercises spreadsheet access so "Test connection" is meaningful
-      return jsonOut_({ ok: true, message: 'Reachable and writing to: ' + sheet.getParent().getUrl() });
+      return jsonOut_({ ok: true, message: `[${CODE_VERSION}] Reachable and writing to: ${sheet.getParent().getUrl()}` });
     }
 
     if (payload.action === 'appendEntry') {
