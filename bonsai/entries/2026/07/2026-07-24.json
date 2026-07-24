@@ -1,6 +1,6 @@
 {
   "date": "2026-07-24",
-  "time": "08:30",
+  "time": "08:29",
   "temperature": 66,
   "humidity": 88,
   "wind": 21,
@@ -13,10 +13,8 @@
   "flowers": null,
   "buds": null,
   "leafCondition": null,
-  "pestObservations": "None",
+  "pestObservations": "none",
   "healthRating": 5,
-  "notes": "Soil was slightly damp, didn’t need watered",
-  "photos": [
-    "bonsai/images/2026/07/2026-07-24-1784899882078-0-image.jpg"
-  ]
+  "notes": "Test",
+  "photos": []
 }
