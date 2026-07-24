@@ -1,0 +1,22 @@
+{
+  "date": "2026-07-24",
+  "time": "08:11",
+  "temperature": 66,
+  "humidity": 88,
+  "wind": 17,
+  "pressure": 30.05,
+  "weatherDescription": "Cloudy",
+  "watered": false,
+  "fertilized": false,
+  "pruned": false,
+  "repotted": false,
+  "flowers": null,
+  "buds": null,
+  "leafCondition": null,
+  "pestObservations": null,
+  "healthRating": 5,
+  "notes": "Soil slightly damp, not watering. ",
+  "photos": [
+    "bonsai/images/2026/07/2026-07-24-1784898728309-0-image.jpg"
+  ]
+}
