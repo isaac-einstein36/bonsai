@@ -1,0 +1,22 @@
+{
+  "date": "2026-07-25",
+  "time": "14:38",
+  "temperature": 79,
+  "humidity": 74,
+  "wind": 17,
+  "pressure": 29.9,
+  "weatherDescription": "Cloudy",
+  "watered": true,
+  "fertilized": false,
+  "pruned": false,
+  "repotted": false,
+  "flowers": null,
+  "buds": null,
+  "leafCondition": null,
+  "pestObservations": "None",
+  "healthRating": 3,
+  "notes": "One full and one partly yellow leaf. Two that fell off",
+  "photos": [
+    "bonsai/images/2026/07/2026-07-25-1785008348576-0-image.jpg"
+  ]
+}
