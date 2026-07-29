@@ -6,7 +6,7 @@
   "wind": null,
   "pressure": null,
   "weatherDescription": null,
-  "watered": false,
+  "watered": true,
   "fertilized": false,
   "pruned": false,
   "repotted": false,
