@@ -1,0 +1,22 @@
+{
+  "date": "2026-07-30",
+  "time": "07:24",
+  "temperature": 75,
+  "humidity": 74,
+  "wind": 25,
+  "pressure": 30.02,
+  "weatherDescription": "Clear",
+  "watered": true,
+  "fertilized": false,
+  "pruned": false,
+  "repotted": false,
+  "flowers": null,
+  "buds": null,
+  "leafCondition": null,
+  "pestObservations": null,
+  "healthRating": 2,
+  "notes": "Lots of brown spots ",
+  "photos": [
+    "bonsai/images/2026/07/2026-07-30-1785414284373-0-image.jpg"
+  ]
+}
