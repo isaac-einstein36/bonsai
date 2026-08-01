@@ -1,0 +1,22 @@
+{
+  "date": "2026-08-01",
+  "time": "10:04",
+  "temperature": 73,
+  "humidity": 69,
+  "wind": 17,
+  "pressure": 29.99,
+  "weatherDescription": "Partly Cloudy",
+  "watered": false,
+  "fertilized": false,
+  "pruned": true,
+  "repotted": false,
+  "flowers": null,
+  "buds": null,
+  "leafCondition": null,
+  "pestObservations": null,
+  "healthRating": 2,
+  "notes": "Significant browning. Removed leaves that came off with light tug. Scratch test showed green trunk.",
+  "photos": [
+    "bonsai/images/2026/08/2026-08-01-1785596742483-0-image.jpg"
+  ]
+}
