@@ -1,0 +1,22 @@
+{
+  "date": "2026-08-02",
+  "time": "11:14",
+  "temperature": 76,
+  "humidity": 62,
+  "wind": 17,
+  "pressure": 30,
+  "weatherDescription": "Clear",
+  "watered": false,
+  "fertilized": false,
+  "pruned": true,
+  "repotted": false,
+  "flowers": null,
+  "buds": null,
+  "leafCondition": null,
+  "pestObservations": null,
+  "healthRating": 2,
+  "notes": "Still very brown. Trunk is green (scratch test). No leaves pulled off",
+  "photos": [
+    "bonsai/images/2026/08/2026-08-02-1785687334913-0-image.jpg"
+  ]
+}
