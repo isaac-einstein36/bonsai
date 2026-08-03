@@ -1,0 +1,22 @@
+{
+  "date": "2026-08-03",
+  "time": "07:00",
+  "temperature": 70,
+  "humidity": 78,
+  "wind": 29,
+  "pressure": 29.92,
+  "weatherDescription": "Clear",
+  "watered": false,
+  "fertilized": false,
+  "pruned": true,
+  "repotted": false,
+  "flowers": null,
+  "buds": null,
+  "leafCondition": null,
+  "pestObservations": null,
+  "healthRating": 2,
+  "notes": "Scratch test showing green. One flower came off from tugging. No substantial changes from yesterday.",
+  "photos": [
+    "bonsai/images/2026/08/2026-08-03-1785758520830-0-image.jpg"
+  ]
+}
