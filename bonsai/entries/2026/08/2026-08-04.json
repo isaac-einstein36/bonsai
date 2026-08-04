@@ -1,0 +1,22 @@
+{
+  "date": "2026-08-04",
+  "time": "07:19",
+  "temperature": 64,
+  "humidity": 73,
+  "wind": 29,
+  "pressure": 29.96,
+  "weatherDescription": "Partly Cloudy",
+  "watered": false,
+  "fertilized": false,
+  "pruned": true,
+  "repotted": false,
+  "flowers": null,
+  "buds": null,
+  "leafCondition": null,
+  "pestObservations": null,
+  "healthRating": 3,
+  "notes": "Took one leaf off. Some green but most leaves still brown. Scratch test still green and soil slightly damp.",
+  "photos": [
+    "bonsai/images/2026/08/2026-08-04-1785846053829-0-image.jpg"
+  ]
+}
