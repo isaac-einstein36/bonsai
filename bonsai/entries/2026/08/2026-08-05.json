@@ -1,0 +1,22 @@
+{
+  "date": "2026-08-05",
+  "time": "07:20",
+  "temperature": 61,
+  "humidity": 77,
+  "wind": 0,
+  "pressure": 30.07,
+  "weatherDescription": "Clear",
+  "watered": false,
+  "fertilized": false,
+  "pruned": true,
+  "repotted": false,
+  "flowers": null,
+  "buds": null,
+  "leafCondition": null,
+  "pestObservations": null,
+  "healthRating": 3,
+  "notes": "Soil barely damp, will see if it needs watered tonight. 2 leaves came off. Scratch test green",
+  "photos": [
+    "bonsai/images/2026/08/2026-08-05-1785932465168-0-image.jpg"
+  ]
+}
