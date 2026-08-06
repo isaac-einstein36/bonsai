@@ -1,12 +1,12 @@
 {
   "date": "2026-08-06",
-  "time": "21:13",
-  "temperature": 74,
-  "humidity": 45,
-  "wind": 33,
-  "pressure": 30.03,
-  "weatherDescription": "Partly Cloudy",
-  "watered": true,
+  "time": "07:25",
+  "temperature": 63,
+  "humidity": 77,
+  "wind": 17,
+  "pressure": 30.07,
+  "weatherDescription": "Clear",
+  "watered": false,
   "fertilized": false,
   "pruned": true,
   "repotted": false,
@@ -14,7 +14,9 @@
   "buds": null,
   "leafCondition": null,
   "pestObservations": null,
-  "healthRating": 3,
-  "notes": "Watered at night. Lots of leaves snapped off ",
-  "photos": []
+  "healthRating": 1,
+  "notes": "Scratch test showing light grey instead of green.",
+  "photos": [
+    "bonsai/images/2026/08/2026-08-06-1786019165422-0-image.jpg"
+  ]
 }
